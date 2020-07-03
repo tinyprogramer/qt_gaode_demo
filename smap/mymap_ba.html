@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://cache.amap.com/lbs/static/main1119.css"/>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=a72a8ca78008524d162e8fe2cc2d84b1"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script src="qwebchannel.js"></script>
+<script type="text/javascript">
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+		zoom:11, //初始化地图层级
+        center: [116.397428, 39.90923] //初始化地图中心点
+    });
+    AMap.plugin(["AMap.Autocomplete"], function() {
+        //构造地点查询类
+
+    });
+
+	var autoOptions = {
+    //city 限定城市，默认全国
+    city: '北京'
+    }
+    var autoComplete= new AMap.Autocomplete(autoOptions);
+    //关键字查询
+    //placeSearch.search('北京大学');
+
+	var mchannel;
+	window.onload=function(){
+
+		if (typeof qt != 'undefined')
+		{
+			new QWebChannel(qt.webChannelTransport, function(channel)
+			{
+				channel.objects.qtChannel.cityChanged.connect(testSetCity);
+				channel.objects.qtChannel.inputChanged.connect(dealComplete);
+				mchannel=channel;
+				getCurCity();
+			}
+			);
+		}
+		else
+		{
+			alert("qt对象获取失败！");
+		}
+
+	}
+	function getCurCity()
+	{
+		map.getCity(function(place){
+			if(place.city=="")
+			{
+				autoComplete.setCity(place.province);
+				mchannel.objects.qtChannel.cityChangeResult(place.province);
+			}else{
+				autoComplete.setCity(place.city);
+				mchannel.objects.qtChannel.cityChangeResult(place.city);
+			}
+			});
+	}
+	function testSetCity(city)
+	{
+		console.log(city);
+		map.setCity(city,function(){
+			getCurCity();
+			
+		});
+
+		
+	}
+	function dealComplete(cont)
+	{
+		console.log(cont);
+		autoComplete.search(cont, function(status, result) {
+          // 搜索成功时，result即是对应的匹配数据
+          //mchannel.objects.qtChannel.getAutocomplete(JSON.stringify(result));
+		  console.log(result);
+		  mchannel.objects.qtChannel.getAutocomplete(result);
+        })
+	}
+
+</script>
+</body>
+</html>
